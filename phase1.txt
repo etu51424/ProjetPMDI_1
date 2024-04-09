@@ -1,0 +1,345 @@
+// PRE CONDITION : ne peut etre appelé que dans une boucle qui lit un fichier du debut à la fin
+// lire une ligne et la split en nb partitions (nb virgules de la ligne+1)
+// s'arrete a la fin d'une ligne (càd au premier \n)
+// retenir le charactere où la fonction s'est arreté (numCharDeb)
+// reçoit donc le charactère depuis où il faut reprendre en paramètre
+module(partitionLineInDoubles;partitions, numCharDeb, file;iChar,iPartition)
+---*
+position the cursor on the character n° numCharDeb of file
+iPartition = 0
+iChar = numCharDeb
+
+do
+str[0] = '\0'
+do
+read ch from file
+if (ch != ',' AND ch != '\n') // car on veut just concat les nombres pas les virgules
+str += ch
+endif
+iChar++
+endwhile while (ch != ',' AND ch != '\n' AND !feof(fiCsv)) // feof utile pour data subject info
+partitions[iPartition] = str converted to double
+iPartition++
+endwhile while (ch != '\n' AND !feof(fiCsv))
+----
+
+module(createPatternsFile;;)
+---*
+nbVAccsOfMovementColumn = ARRAY(600)
+sumsOfVAcc = ARRAY(600)
+
+// pour le moment ne gere pas les 600 car risque de bug
+
+open "../TrainSet.csv" to fiTrainSet in "r" mode sans error
+open "../patterns.csv" to fiPatterns in "w" mode sans error
+
+// y'a deux tableaux : un tableaud e sommes et un tableau d'itérateurs.
+// faut un tableau d'itérateur car on passe les Vacc vides dans 4 colonnes problématiques
+// en c pour init toutes les cases à 0 c'est juste sumOfVacc[600] = { 0 }
+// et nbVAccsOfMovementColumn[600] = { 0 }
+// ignore les 3 
+
+iColumn = 0
+while (iColumn < 600) 
+sumsOfVAcc[iColumn] = 0
+nbVAccsOfMovementColumn[iColumn] = 0
+iColumn ++
+endwhile
+
+iMovement = 0
+while (iMovement < 6)
+
+lastCharPos = 0
+module(partitionLineInDoubles;partitions, lastCharPos, fiTrainSet;lastCharPos, nbPartitions)
+currentMovementNum = partitions[0]
+
+while (currentMovementNum == partitions[0])
+
+// si nbPartitions < 603, dans les 2 tableaux,
+// les cases entre nbPartitions et 603 seront ignorees lors de la moyenne
+iPartition = 3 // commencer à la 1ère vacc
+while (iPartition < nbPartitions)
+sumsOfVacc[iPartition-3] += partitions[iPartition]
+nbVAccsOfMovementColumn[iPartition-3] ++
+
+module(partitionLineInDoubles;partitions, lastCharPos, fiTrainSet;lastCharPos, nbPartitions)
+iPartition ++
+endwhile
+
+endwhile 
+
+// 1ère colonne dans le fichier pattern est num du movement
+write iMovement to fiPatterns
+write , to fiPatterns
+
+// pour toutes les colonnes du movement donc nb colonnes à parcourir sera tjr 600
+// sumVAccs[599] et nbVAccsOfMovementColumn[599] 
+// valent au pire 0 (mais ça n'arrivera pas) 
+iVAcc = 0
+while (iVAcc < 600)
+// fait la moyenne d'une colonne avec la somme de ses valeurs et son nb valeurs
+averageVAcc = sumVAccs[iVAcc] / nbVAccsOfMovementColumn[iVAcc]
+write averageVAcc to fiPatterns // fprintf
+write "," to fiPatterns
+
+iVAcc++
+endwhile
+ 
+write "\n" to fiPatterns
+iMovement++
+endwhile
+
+close fiTrainSet
+----
+
+// stdDev est recu x, y ou z lors de l'appel, et idem pour average
+module(isOutlierData;vAcc, average, stdDev;distance)
+---*
+distance = abs(average - vAcc) > 3 * stdDev // fabs
+----
+
+// Détermine nbLines du fichier de Movement d'une personne (afin de savoir les 10% et 90%)
+// lit le nombre affiché au début de la dernière ligne puis le retourne
+module(findNbLinesInFile;file;nbLinesInFile)
+---*
+déplacer le curseur à la fin du fichier
+
+// but: atteindre début de la dernière ligne
+//-1 est le dernier caract du fichier
+iCharFromTheEnd = -1
+do
+// recule d'un char
+iCharFromTheEnd--
+// recule le curseur avec le i
+placer le curseur à iCharFromTheEnd de la fin du fichier
+read ch from file
+endwhile while (ch != '\n') // Stop quand atteint déb de la ligne
+
+// on est au deb de la dernière ligne
+// pour obtenir nbLinesDuFichier, lire ch par ch jusqu'à la prochaine virgule
+strNbLinesInFile
+iCharWord = 0
+do
+read ch from file
+if (ch != ',' AND !feof(file)) //car on veut just concat les nombres pas les virgules
+strNbLinesInFile[iCharWord] = ch
+iCharWord++
+endif
+endwhile while (ch != ',' AND !feof(file))
+
+// terminer la string
+strNbLinesInFile[iCharWord] = '\0'
+nbLinesInFile = strNbLinesInFile converted to int
+----
+
+module(findVectorMagnitude;x,y,z;vectorMagnitude)
+---*
+vectorMagnitude = x*x + y*y + z*z
+----
+
+// PRE CONDITION : ne peut etre appelé que dans une boucle qui lit un fichier du debut à la fin
+// lire une ligne et la split en nb partitions demandées
+// s'arrete a la fin d'une ligne (càd au premier \n)
+// retenir le charactere où la fonction s'est arreté (numCharDeb) (175 pour commencer)
+// reçoit donc le charactère depuis où il faut reprendre en paramètre
+module(partitionLineInDoubles;nbPartitions, partitions, numCharDeb, file;iChar)
+---*
+position the cursor on the character n° numCharDeb of file
+iPartition = 0
+iChar = numCharDeb
+
+do
+str[0] = '\0'
+do
+read ch from file
+if (ch != ',' AND ch != '\n') // car on veut just concat les nombres pas les virgules
+str += ch
+endif
+iChar++
+endwhile while (ch != ',' AND ch != '\n' AND !feof(fiCsv)) // feof utile pour data subject info
+partitions[iPartition] = str converted to double
+iPartition++
+endwhile while (ch != '\n' AND !feof(fiCsv))
+----
+
+// pVAccOfOutliers pointe vers une struct avec trois champ entier : x, y et z 
+
+module(writeOneLineToDataSetFile;outlierVAcc, pNbOutlierVAcc, numCharDeb, nbVAccColumns, inputFile, iMovement, gender, index, outputFile ; lastCharPos)
+---*
+averageX = 0,00096087 
+standardDevX = 0,38875666
+averageY = 0,05525659
+standardDevY = 0,61937128
+averageZ = 0,0352192 
+standardDevZ = 0,4300345 
+
+lastCharPos = numCharDeb
+
+// dans l'énoncé, des numéros de 1-6 sont associés à chaque type de mouvement (wlk, downwstairs, etc). 
+// ce switch prend l'indice du fichier et regroupe les noms au nombre associé au type de mouvement comme l'énoncé le requiert
+if (iMovement >= 0 AND iMovement <= 2)
+movement = 1
+else if (iMovement == 3 OR iMovement == 4)
+movement = 2
+else if (iMovement == 5 OR iMovement == 6)
+movement = 4
+else if (iMovement == 7 OR iMovement == 8)
+movement = 5
+else if (iMovement == 9 OR iMovement <= 11
+movement = 3
+else if (iMovement >= 12 AND iMovement <= 14) 
+movement = 6
+endif
+
+write movement to outputFile // fputs
+write "," to outputFile
+write gender to outputFile
+write "," to outputFile
+write index to outputFile
+write "," to outputFile
+
+iLine = 0
+while (iLine < nbVAccColumns)
+
+module(partitionLineInDoubles;13,partitions,lastCharPos,inputFile;lastCharPos)
+module(findVectorMagnitude;partitions[10],partitions[11],partitions[12];vAcc)
+
+write vAcc to outputFile 
+if (iLine == nbVAccColumns - 1)
+write "\n" to outputFile
+else
+write "," to outputFile
+endif
+
+// PHASE 1.5
+module(isOutlierData;partitions[10], averageX, standardDevX;isOutlier)
+if (isOutlier)
+outliersVAcc[pNbOutlierVAcc->X].X = partitions[10]
+outliersVAcc[pNbOutlierVAcc->X].numLineX = iLine
+pNbOutlierVAcc->X ++
+endif
+module(isOutlierData;partitions[11], averageY, standardDevY;isOutlier)
+if (isOutlier)
+outliersVAcc[pNbOutlierVAcc->Y].Y = partitions[11]
+outliersVAcc[pNbOutlierVAcc->Y].numLineY = iLine
+pNbOutlierVAcc->Y ++
+endif
+module(isOutlierData;partitions[12], averageZ, standardDevZ;isOutlier)
+if (isOutlier)
+outliersVAcc[pNbOutlierVAcc->Z].Z = partitions[12]
+outliersVAcc[pNbOutlierVAcc->Z].numLineZ = iLine
+pNbOutlierVAcc->Z ++
+endif
+
+iLine ++
+endwhile
+-----
+
+module(createTestSetAndTrainSet)
+---*
+lastCharPosSubjectInfo = 34
+movementFolders = ["dws_1", "dws_2", "dws_11", "jog_9", "jog_16", "sit_5",
+	"sit_13", "std_6", "std_14", "ups_3", "ups_4","ups_12", "wlk_7", "wlk_8", "wlk_15"]
+open "../TestSet.csv" to fiTestSet in "w" mode sans error
+open "../TrainSet.csv" to fiTrainSet in "w" mode sans error
+open "../data_subjects_info.csv" to fiSubjectsInfo in "r" mode sans error
+open "../Validation.csv" to fiValidation in "w" mode sans error
+
+outliersVAcc[600] // tab de structure a 6 champ (X, Y et Z, numLineX, numLineY, numLineZ) de 600 potentielles vAcc aberrantess
+
+// fichiers commencent à sub_1
+
+iMovement = 0	
+while (iMovement < 15)
+// réouvre le fichier pour chaque personne
+module(partitionLineInDoubles;5, subjectInfo, lastCharPosSubjectInfo, fiSubjectsInfo;lastCharPosSubjectInfo)
+lastCharPosSubjectInfo++
+
+iPerson = 1
+while (iPerson <= 24)
+outliersVAcc = { 0 } // reinit pour chaque mouvement de personne pusique chacun correspond à une des 360 lignes
+nbOutlierVacc = { 0 } // initx,y,z à 0 pour chaque fichier mouvement
+
+strIPerson = iPerson converted to str
+filepath = "../A_DeviceMotion_data/A_DeviceMotion_data/" 
++ movementFolders[iMovement] + "/sub_" + strIPerson + ".csv"
+sortir filepath
+
+open filepath to fiMovementOfPerson in "r" mode sans error
+module(findNbLinesInFile;fiMovementOfPerson;nbLinesInFile)
+sortir(nbLinesInFile)
+
+// lis 600 lignes vers le dataset et 60 lignes vers le testset.
+// Si le fichier a moins de 660 lignes, alors 90% du fichier va vers le dataset et 10% vers le testset
+if (nbLinesInFile < 660)
+// y'a un diff nombre de outliersX, outliersY, et outliersZ donc la fn doit recevoir tout le tableau
+// car c'est trois indice qui parcourent en parallele
+
+module(writeOneLineToDataSetFile; outliersVAcc, &nbOutlierVAcc, 175, 0.9*nbLinesInFile, fiMovementOfPerson, iMovement, subjectInfo[4], subjectInfo[0], fiTrainSet;lastCharPos)
+module(writeOneLineToDataSetFile; outliersVAcc, &nbOutlierVacc, lastCharPos, 0.1*nbLinesInFile, fiMovementOfPerson, iMovement, subjectInfo[4], subjectInfo[0], fiTestSet;lastCharPos)
+else
+module(writeOneLineToDataSetFile; outliersVAcc, &nbOutlierVAcc, 175, 600, fiMovementOfPerson, iMovement, subjectInfo[4], subjectInfo[0], fiTrainSet;lastCharPos)
+module(writeOneLineToDataSetFile; outliersVAcc, &nbOutlierVAcc, lastCharPos, 60, fiMovementOfPerson, iMovement, subjectInfo[4], subjectInfo[0], fiTestSet;lastCharPos)
+endif
+
+// calcule dans des tableaux les 2 colonnes * nbOutlierData
+// parcourt trois tableaux en meme temps avec 3 indices stocker dans une meme struct
+// intéret de stocker nbDonneesAbberrantes: pouvoir connaitre la fin du tableau
+
+write filepath to fiValidation
+write "," to fiValidation
+write nbLinesInFile to fiValidation
+write "," to fiValidation
+write nbOutlierVAcc.X to fiValidation
+write "," to fiValidation
+write nbOutlierVAcc.Y to fiValidation
+write "," to fiValidation
+write nbOutlierVAcc.Z to fiValidation
+write "\n" to fiValidation
+
+// écrit nbDonnesAbberantes X, Y et Z
+// écrit les 3 lignes de 1200 colonnes
+
+iOutlierVAcc = 0
+while (iOutlierVAcc < nbOutlierVAcc.X)
+write outliersVAcc[iOutlierVAcc].numLineX to fiValidation // fprintf
+write "," to fiValidation
+write outliersVAcc[iOutlierVAcc].X to fiValidation // fprintf
+write "," to fiValidation
+
+iOutlierVAcc++
+endwhile
+write "\n" to fiValidation
+
+iOutlierVAcc = 0
+while (iOutlierVAcc < nbOutlierVAcc.Y)
+write outliersVAcc[iOutlierVAcc].numLineY to fiValidation // fprintf
+write "," to fiValidation
+write outliersVAcc[iOutlierVAcc].Y to fiValidation // fprintf
+write "," to fiValidation
+
+iOutlierVAcc++
+endwhile
+write "\n" to fiValidation
+
+iOutlierVAcc = 0
+while (iOutlierVAcc < nbOutlierVAcc.Z)
+write outliersVAcc[iOutlierVAcc].numLineZ to fiValidation // fprintf
+write "," to fiValidation
+write outliersVAcc[iOutlierVAcc].Z to fiValidation // fprintf
+write "," to fiValidation
+
+iOutlierVAcc++
+endwhile
+write "\n" to fiValidation
+
+close fiMovementOfPerson
+iPerson++
+endwhile
+iMouvement++
+endwhile
+close fiSubjectInfo
+close fiTestSet
+close fiTrainSet
+close fiValidation
+----

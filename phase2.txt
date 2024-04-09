@@ -1,0 +1,90 @@
+// PRE CONDITION : ne peut etre appelé que dans une boucle qui lit un fichier du debut à la fin
+// lire une ligne et la split en nb partitions (nb virgules de la ligne+1)
+// s'arrete a la fin d'une ligne (càd au premier \n)
+// retenir le charactere où la fonction s'est arreté (numCharDeb)
+// reçoit donc le charactère depuis où il faut reprendre en paramètre
+module(partitionLineInDoubles;partitions, numCharDeb, file;iChar,iPartition)
+---*
+position the cursor on the character n° numCharDeb of file
+iPartition = 0
+iChar = numCharDeb
+
+do
+str[0] = '\0'
+do
+read ch from file
+if (ch != ',' AND ch != '\n') // car on veut just concat les nombres pas les virgules
+str += ch
+endif
+iChar++
+endwhile while (ch != ',' AND ch != '\n' AND !feof(fiCsv)) // feof utile pour data subject info
+partitions[iPartition] = str converted to double
+iPartition++
+endwhile while (ch != '\n' AND !feof(fiCsv))
+----
+
+module(createPatternsFile;;)
+---*
+nbVAccsOfMovementColumn = ARRAY(600)
+sumsOfVAcc = ARRAY(600)
+
+// pour le moment ne gere pas les 600 car risque de bug
+
+open "../TrainSet.csv" to fiTrainSet in "r" mode sans error
+open "../patterns.csv" to fiPatterns in "w" mode sans error
+
+// y'a deux tableaux : un tableaud e sommes et un tableau d'itérateurs.
+// faut un tableau d'itérateur car on passe les Vacc vides dans 4 colonnes problématiques
+// en c pour init toutes les cases à 0 c'est juste sumOfVacc[600] = { 0 }
+// et nbVAccsOfMovementColumn[600] = { 0 }
+// ignore les 3 
+
+iColumn = 0
+while (iColumn < 600) 
+sumsOfVAcc[iColumn] = 0
+nbVAccsOfMovementColumn[iColumn] = 0
+iColumn ++
+endwhile
+
+iMovement = 0
+while (iMovement < 6)
+
+lastCharPos = 0
+module(partitionLineInDoubles;partitions, lastCharPos, fiTrainSet;lastCharPos, nbPartitions)
+currentMovementNum = partitions[0]
+
+while (currentMovementNum == partitions[0])
+
+// si nbPartitions < 603, dans les 2 tableaux,
+// les cases entre nbPartitions et 603 seront ignorees lors de la moyenne
+iPartition = 3 // commencer à la 1ère vacc
+while (iPartition < nbPartitions)
+sumsOfVacc[iPartition-3] += partitions[iPartition]
+nbVAccsOfMovementColumn[iPartition-3] ++
+
+module(partitionLineInDoubles;partitions, lastCharPos, fiTrainSet;lastCharPos, nbPartitions)
+iPartition ++
+endwhile
+
+endwhile 
+
+// pour toutes les colonnes du movement donc nb colonnes à parcourir sera tjr 600
+// sumVAccs[599] et nbVAccsOfMovementColumn[599] 
+// valent au pire 0 (mais ça n'arrivera pas) 
+iVAcc = 0
+while (iVAcc < 600)
+// fait la moyenne d'une colonne avec la somme de ses valeurs et son nb valeurs
+averageVAcc = sumVAccs[iVAcc] / nbVAccsOfMovementColumn[iVAcc]
+write averageVAcc to fiPatterns // fprintf
+write "," to fiPatterns
+
+iVAcc++
+endwhile
+ 
+write "\n" to fiPatterns
+iMovement++
+endwhile
+
+close fiTrainSet
+----
+
